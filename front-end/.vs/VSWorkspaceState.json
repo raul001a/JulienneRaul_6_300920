@@ -1,8 +1,14 @@
 {
   "ExpandedNodes": [
     "",
-    "\\src"
+    "\\src",
+    "\\src\\app",
+    "\\src\\app\\auth",
+    "\\src\\app\\auth\\login",
+    "\\src\\app\\auth\\signup",
+    "\\src\\app\\header",
+    "\\src\\app\\services"
   ],
-  "SelectedNode": "\\src\\test.ts",
+  "SelectedNode": "\\src\\app\\auth\\signup\\signup.component.ts",
   "PreviewInSolutionExplorer": false
 }

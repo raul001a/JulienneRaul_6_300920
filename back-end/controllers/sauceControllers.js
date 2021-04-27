@@ -21,6 +21,27 @@ exports.findOneSauce = (req, res, next) => {
         .catch(error => res.status(404).json({ error }));
 };  
 
+
+
+// pour vérifier que l'userId de la personne connectée est le même que celui qui a créé la sauce 
+
+const jwt = require('jsonwebtoken');
+
+// pas réussi à m'en servir
+function isOwner(sauceUserId) {
+    const token = req.headers.authorization.split(' ')[1];
+    const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
+    const userId = decodedToken.userId;
+    if (userId === sauceUserId) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+
+
 /* met à jour et enlève l'ancienne photo*/
 
 exports.updateOneSauce = (req, res, next) => {
@@ -52,29 +73,25 @@ Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
 };
    
 
-/*
 
-exports.updateOneSauce = (req, res, next) => {
-    
-    const sauceObject = req.file ?
-        {...JSON.parse(req.body.sauce),
-            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-        } : { ...req.body };
-    Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
-        .then(() => res.status(200).json({ message: 'Sauce modifiée !' }))
-        .catch(error => res.status(400).json({ error }));
-};
-*/
 
 exports.deleteOneSauce = (req, res, next) => {
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
-            const filename = sauce.imageUrl.split('/images/')[1];
-            fs.unlink(`images/${filename}`, () => {
-                Sauce.deleteOne({ _id: req.params.id })
-                    .then(() => res.status(200).json({ message: 'Sauce supprimée !' }))
-                    .catch(error => res.status(400).json({ error }));
-            });
+            const token = req.headers.authorization.split(' ')[1];
+            console.log(token);
+            console.log(sauce.userId);
+            const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
+            const userId = decodedToken.userId;
+            if (userId === sauce.userId) {
+                const filename = sauce.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Sauce.deleteOne({ _id: req.params.id })
+                        .then(() => res.status(200).json({ message: 'Sauce supprimée !' }))
+                        .catch(error => res.status(400).json({ error }));
+                });
+            }  
+            else console.log("utilisateur non autorisé")
         })
         .catch(error => res.status(500).json({ error }));
 };
