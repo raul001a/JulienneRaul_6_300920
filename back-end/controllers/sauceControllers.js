@@ -1,7 +1,7 @@
 const Sauce = require('../models/sauce');
 const fs = require('fs');
 
-
+// create one sauce
 exports.createSauce = (req, res, next) => {
     const sauceObject = JSON.parse(req.body.sauce);
     delete sauceObject._id;
@@ -14,7 +14,7 @@ exports.createSauce = (req, res, next) => {
         .catch(error => res.status(400).json({ error }));
 };
 
-
+// find one sauce
 exports.findOneSauce = (req, res, next) => {
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => res.status(200).json(sauce))
@@ -23,13 +23,12 @@ exports.findOneSauce = (req, res, next) => {
 
 
 
-// pour vérifier que l'userId de la personne connectée est le même que celui qui a créé la sauce 
+// function to check if logged user is same as the one who created the sauce 
 
 const jwt = require('jsonwebtoken');
 
-// pas réussi à m'en servir
-function isOwner(sauceUserId) {
-    const token = req.headers.authorization.split(' ')[1];
+function isOwner(sauceUserId, loggedUserId) {
+    const token = loggedUserId.split(' ')[1];
     const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
     const userId = decodedToken.userId;
     if (userId === sauceUserId) {
@@ -40,10 +39,116 @@ function isOwner(sauceUserId) {
     }
 }
 
+// check if logged user is same as sauce creator. if yes, delete the sauce
+exports.deleteOneSauce = (req, res, next) => {
+    Sauce.findOne({ _id: req.params.id })
+        .then(sauce => {
+            if (isOwner(sauce.userId, req.headers.authorization)) {
+                const filename = sauce.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Sauce.deleteOne({ _id: req.params.id })
+                        .then(() => res.status(200).json({ message: 'Sauce supprimée !' }))
+                        .catch(error => res.status(400).json({ error }));
+                });
+            }
+            else return res.status(401).json({ error: 'utilisateur incorrect' })
+        })
+        .catch(error => res.status(500).json({ error }));
+};
 
 
-/* met à jour et enlève l'ancienne photo*/
+/* other way to check if logged user is same as sauce creator, without using isOwner
+exports.deleteOneSauce = (req, res, next) => {
+    Sauce.findOne({ _id: req.params.id })
+        .then(sauce => {
+            const token = req.headers.authorization.split(' ')[1];
+            console.log(token);
+            console.log(sauce.userId);
+            const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
+            const userId = decodedToken.userId;
+            if (userId === sauce.userId) {
+                const filename = sauce.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Sauce.deleteOne({ _id: req.params.id })
+                        .then(() => res.status(200).json({ message: 'Sauce supprimée !' }))
+                        .catch(error => res.status(400).json({ error }));
+                });
+            }
+            else return res.status(401).json({ error: 'utilsateur incorrect' })
+        })
+        .catch(error => res.status(500).json({ error }));
+};
 
+*/
+
+// update sauce checking the owner of the sauce with isOwner (delete old sauce picture) 
+exports.updateOneSauce = (req, res, next) => {
+    let sauceObject;
+    Sauce.findOne({ _id: req.params.id })
+        .then(sauce => { 
+            if (isOwner(sauce.userId, req.headers.authorization)) {
+                if (req.file) {
+                    const filename = sauce.imageUrl.split('/images/')[1];
+                    fs.unlink(`images/${filename}`, (err) => {
+                        if (err) throw err;
+                        console.log('Fichier supprimé !');
+                    })
+                    sauceObject =
+                    {
+                        ...JSON.parse(req.body.sauce),
+                        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+                    };
+
+                }
+                else {
+                    sauceObject = { ...req.body };
+                }
+                return sauce
+            }
+            else return res.status(401).json({ error: 'utilisateur incorrect' })
+        })
+        .then(sauce => {
+            Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+                .then(() => res.status(200).json({ message: 'Sauce modifiée !' }))
+                .catch(error => res.status(400).json({ error }));
+        })
+        .catch(error => res.status(500).json({ error }));
+};
+
+/* update sauce without checking the owner of the sauce (delete old sauce picture) 
+exports.updateOneSauce = (req, res, next) => {
+    let sauceObject;
+    Sauce.findOne({ _id: req.params.id })
+        .then(sauce => {
+            if (req.file) {
+                const filename = sauce.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, (err) => {
+                    if (err) throw err;
+                    console.log('Fichier supprimé !');
+                })
+                sauceObject =
+                    {
+                        ...JSON.parse(req.body.sauce),
+                        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+                };
+                
+            }
+            else {
+                sauceObject = { ...req.body };
+             }
+           return sauce 
+        })
+        .then(sauce => {
+            Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+                .then(() => res.status(200).json({ message: 'Sauce modifiée !' }))
+                .catch(error => res.status(400).json({ error }));  })
+        .catch(error => res.status(500).json({ error }));
+};
+*/
+
+
+
+/* another way to update sauce without checking the owner of the sauce (delete old sauce picture)
 exports.updateOneSauce = (req, res, next) => {
     let sauceObject;
     if (req.file) {
@@ -71,37 +176,18 @@ Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
     .then(() => res.status(200).json({ message: 'Sauce modifiée !' }))
     .catch(error => res.status(400).json({ error }));
 };
-   
+*/
 
 
-
-exports.deleteOneSauce = (req, res, next) => {
-    Sauce.findOne({ _id: req.params.id })
-        .then(sauce => {
-            const token = req.headers.authorization.split(' ')[1];
-            console.log(token);
-            console.log(sauce.userId);
-            const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
-            const userId = decodedToken.userId;
-            if (userId === sauce.userId) {
-                const filename = sauce.imageUrl.split('/images/')[1];
-                fs.unlink(`images/${filename}`, () => {
-                    Sauce.deleteOne({ _id: req.params.id })
-                        .then(() => res.status(200).json({ message: 'Sauce supprimée !' }))
-                        .catch(error => res.status(400).json({ error }));
-                });
-            }  
-            else console.log("utilisateur non autorisé")
-        })
-        .catch(error => res.status(500).json({ error }));
-};
-
+// get all sauce
 exports.getAllSauce = (req, res, next) => {
     Sauce.find()
         .then(sauces => res.status(200).json(sauces))
         .catch(error => res.status(400).json({ error }));
 };
 
+
+// like or dislike sauce
 exports.likeSauce =
     (req, res, next) => {
         console.log(req.body.userId);
