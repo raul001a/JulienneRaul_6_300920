@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 
 const mongoose = require('mongoose');
 
+const mongoSanitize = require('express-mongo-sanitize');
+
 const sauceRoutes = require('./routes/sauceRoutes');
 const userRoutes = require('./routes/userRoutes');
 const path = require('path');
@@ -26,6 +28,10 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+
+app.use(mongoSanitize({
+    replaceWith: '_'
+}));
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/api/sauces', sauceRoutes);

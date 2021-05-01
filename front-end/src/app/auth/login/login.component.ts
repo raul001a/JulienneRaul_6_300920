@@ -36,8 +36,9 @@ export class LoginComponent implements OnInit {
       }
     ).catch(
       (error) => {
-        this.loading = false;
-        this.errorMsg = error.message;
+            this.loading = false;
+            this.errorMsg = error.error.error;
+        //this.errorMsg = error.message;
       }
     );
   }

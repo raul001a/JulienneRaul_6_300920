@@ -84,6 +84,7 @@ exports.deleteOneSauce = (req, res, next) => {
 // update sauce checking the owner of the sauce with isOwner (delete old sauce picture) 
 exports.updateOneSauce = (req, res, next) => {
     let sauceObject;
+    console.log(req.body);
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => { 
             if (isOwner(sauce.userId, req.headers.authorization)) {
