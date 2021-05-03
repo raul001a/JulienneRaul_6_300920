@@ -6,14 +6,14 @@ const jwt = require('jsonwebtoken');
 const CryptoJS = require("crypto-js");
 
 
-
-// cryptage du mail
+/*
+// cryptage du mail avec AES
 const encryptedEmail = CryptoJS.AES.encrypt("julienne@yahoo.fr", "Secret Passphrase");
 console.log("trst1" + encryptedEmail)
 //décryptage du mail
 const decryptedEmail = CryptoJS.AES.decrypt(encryptedEmail, "Secret Passphrase");
 console.log("test2" + decryptedEmail.toString(CryptoJS.enc.Utf8));
-
+*/
 
 // route pour récupérer les info d'un user 
 exports.findOneUser = (req, res, next) => {
@@ -38,11 +38,17 @@ exports.signup = (req, res, next) => {
     console.log("test match" + testPassword);
     console.log("test new Regexp" + testPasswordTest);
     */
+    // cryptage de l'email
+    const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
+    /*
+    const encryptedEmail = CryptoJS.AES.encrypt(req.body.email, "Secret Passphrase").toString();
+    */
+
     if (testPassword) {
         bcrypt.hash(req.body.password, 10)
             .then(hash => {
                 const user = new User({
-                    email: req.body.email,
+                    email: encryptedEmail,
                     password: hash
                 });
                 user.save()
@@ -55,8 +61,14 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+    // cryptage de l'email
+    // cryptage de l'email
+    const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
+    /*
+const encryptedEmail = CryptoJS.AES.encrypt(req.body.email, "Secret Passphrase").toString();
+*/
     
-    User.findOne({ email: req.body.email })
+    User.findOne({ email: encryptedEmail})
         .then(user => {
             if (!user) {
                 return res.status(401).json({ error: 'Utilisateur non trouvé !' });
