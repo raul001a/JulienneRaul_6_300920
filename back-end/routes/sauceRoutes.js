@@ -18,4 +18,6 @@ router.delete('/:id', auth, sauceCtrl.deleteOneSauce );
 router.get('/', auth, sauceCtrl.getAllSauce);
 
 
+
+
 module.exports = router;
