@@ -23,15 +23,6 @@ mongoose.connect(`mongodb+srv://${process.env.MG_USERNAME}:${process.env.MG_PASS
 
 
 
-/*
-mongoose.connect('mongodb+srv://julienne:vjgOzla0@cluster0.3ksjz.mongodb.net/pekocko?retryWrites=true&w=majority',
-    {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-    })
-    .then(() => console.log('Connexion à MongoDB réussie !'))
-    .catch(() => console.log('Connexion à MongoDB échouée !'));
-*/
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');

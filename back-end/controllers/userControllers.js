@@ -3,22 +3,24 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
+
+const stringMasking = require('string-masking')
 
 
-/*
-// cryptage du mail avec AES
-const encryptedEmail = CryptoJS.AES.encrypt("julienne@yahoo.fr", "Secret Passphrase");
-console.log("trst1" + encryptedEmail)
-//décryptage du mail
-const decryptedEmail = CryptoJS.AES.decrypt(encryptedEmail, "Secret Passphrase");
-console.log("test2" + decryptedEmail.toString(CryptoJS.enc.Utf8));
-*/
 
-// route pour récupérer les info d'un user 
+// route pour récupérer les info d'un user // pour test mongo-sanitize et masquage email
 exports.findOneUser = (req, res, next) => {
-    console.log(req.body);
     User.findOne({ email: req.body.email })
+        .then(user => {         
+            const test = JSON.stringify(user);
+            const userObject = {
+                ...JSON.parse(test),
+                email: stringMasking(user.email, -2).response
+            }
+            return userObject
+            
+        })
         .then(user => res.status(200).json(user))
         .catch(error => res.status(404).json({ error }));
 };
@@ -29,26 +31,16 @@ exports.signup = (req, res, next) => {
     // ask for a strongpassword via regExp 
     const userPassword = req.body.password;
     const regexp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z0-9\d@$!%*?&]{8,15}$/; 
-    console.log(userPassword.match(regexp));
     let testPassword = userPassword.match(regexp); // renvoie null quand le regExp n'est pas ok
 
-    /*
-    let testRegExp = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z0-9\d@$!%*?&]{8,15}$', 'g');
-    let testPasswordTest = testRegExp.test(userPassword); // renvoie true quand le regExp est OK
-    console.log("test match" + testPassword);
-    console.log("test new Regexp" + testPasswordTest);
-    */
     // cryptage de l'email
-    const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
-    /*
-    const encryptedEmail = CryptoJS.AES.encrypt(req.body.email, "Secret Passphrase").toString();
-    */
-
+    //const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
+    
     if (testPassword) {
         bcrypt.hash(req.body.password, 10)
             .then(hash => {
                 const user = new User({
-                    email: encryptedEmail,
+                    email: req.body.email,
                     password: hash
                 });
                 user.save()
@@ -61,16 +53,14 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+
     // cryptage de l'email
-    // cryptage de l'email
-    const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
-    /*
-const encryptedEmail = CryptoJS.AES.encrypt(req.body.email, "Secret Passphrase").toString();
-*/
-    
-    User.findOne({ email: encryptedEmail})
+    // const encryptedEmail = CryptoJS.HmacSHA256(req.body.email, process.env.TOKEN_KEY).toString();
+ 
+    User.findOne({ email: req.body.email})
         .then(user => {
             if (!user) {
+                console.log(user);
                 return res.status(401).json({ error: 'Utilisateur non trouvé !' });
             }
             bcrypt.compare(req.body.password, user.password)
