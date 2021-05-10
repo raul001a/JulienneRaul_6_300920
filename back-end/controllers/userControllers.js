@@ -9,8 +9,10 @@ const stringMasking = require('string-masking')
 
 
 
+
 // route pour récupérer les info d'un user // pour test mongo-sanitize et masquage email
 exports.findOneUser = (req, res, next) => {
+    console.log(req.body);
     User.findOne({ email: req.body.email })
         .then(user => {         
             const test = JSON.stringify(user);
