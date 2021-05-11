@@ -33,11 +33,11 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-/*
+
 app.use(mongoSanitize({
     replaceWith: '_'
 }));
-*/
+
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/api/sauces', sauceRoutes);
